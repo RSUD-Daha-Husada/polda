@@ -30,35 +30,33 @@ func NewAuthService(db *gorm.DB) *AuthService {
 func (s *AuthService) Login(username, password, ipAddress, userAgent string) (string, error) {
 	user, err := s.UserRepo.FindByUsername(username)
 	if err != nil {
-		// Simpan log gagal login tapi jangan ganggu flow
-		if errLog := helpers.SaveLoginLog(s.DB, nil, "login", userAgent, ipAddress, "failed", "username not found"); errLog != nil {
-			fmt.Println("Failed to save login log:", errLog)
-		}
+		_ = helpers.SaveLoginLog(s.DB, nil, "login", userAgent, ipAddress, "failed", "username not found")
 		return "", errors.New("username not found")
 	}
 
 	if user.Password != nil && !utils.CheckPasswordHash(password, *user.Password) {
-		if errLog := helpers.SaveLoginLog(s.DB, &user.UserID, "login", userAgent, ipAddress, "failed", "invalid password"); errLog != nil {
-			fmt.Println("Failed to save login log:", errLog)
-		}
+		_ = helpers.SaveLoginLog(s.DB, &user.UserID, "login", userAgent, ipAddress, "failed", "invalid password")
 		return "", errors.New("invalid password")
 	}
 
 	token, err := utils.GenerateJWT(user.UserID)
 	if err != nil {
-		if errLog := helpers.SaveLoginLog(s.DB, &user.UserID, "login", userAgent, ipAddress, "failed", "failed to generate token"); errLog != nil {
-			fmt.Println("Failed to save login log:", errLog)
-		}
+		_ = helpers.SaveLoginLog(s.DB, &user.UserID, "login", userAgent, ipAddress, "failed", "failed to generate token")
 		return "", err
 	}
 
-	// Simpan log login sukses
-	if errLog := helpers.SaveLoginLog(s.DB, &user.UserID, "login", userAgent, ipAddress, "success", "login successful"); errLog != nil {
-		fmt.Println("Failed to save login log:", errLog)
+	// Simpan token ke tabel access_tokens
+	expiredAt := time.Now().Add(24 * time.Hour) // expired dalam 1 hari
+	if err := utils.SaveAccessToken(s.DB, user.UserID, token, userAgent, ipAddress, expiredAt); err != nil {
+		fmt.Println("Failed to save access token:", err)
 	}
+
+	// Simpan log login sukses
+	_ = helpers.SaveLoginLog(s.DB, &user.UserID, "login", userAgent, ipAddress, "success", "login successful")
 
 	return token, nil
 }
+
 
 // ✅ Generate kode login dan simpan ke DB, lalu kirim via WhatsApp
 func (s *AuthService) GenerateLoginCode(telephone string) error {
@@ -158,12 +156,11 @@ func sendWhatsApp(receiver string, code string) error {
 	fullURL := fmt.Sprintf("%s?%s", endpoint, params.Encode())
 	resp, err := client.Get(fullURL)
 	if err != nil {
-		return fmt.Errorf("Gagal kirim WA: %w", err)
+		return fmt.Errorf("gagal kirim WA: %w", err)
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("WA Gateway gagal: %s", resp.Status)
+		return fmt.Errorf("wa gateway gagal: %s", resp.Status)
 	}
 
 	return nil
