@@ -8,8 +8,8 @@ import (
 
 type CodeLoginByWA struct {
 	CodeLoginByWAID uuid.UUID `gorm:"type:uuid;primaryKey" json:"code_login_by_wa_id"`
-	UserID uuid.UUID `gorm:"type:uuid;not null" json:"user_id"`
-	Code   string    `gorm:"type:varchar(6);not null" json:"code"`
+	UserID          uuid.UUID `gorm:"type:uuid;not null" json:"user_id"`
+	Code            string    `gorm:"type:varchar(6);not null" json:"code"`
 
 	ValidUntil time.Time `gorm:"not null" json:"valid_until"` 
 	Used       bool      `gorm:"default:false" json:"used"`   

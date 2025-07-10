@@ -27,14 +27,17 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request"})
 	}
 
-	token, err := h.Service.Login(input.Username, input.Password)
+	ip := c.IP()
+	userAgent := string(c.Request().Header.UserAgent())
+
+	token, err := h.Service.Login(input.Username, input.Password, ip, userAgent)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	return c.JSON(fiber.Map{
 		"message": "login successful",
-		"token": token,
+		"token":   token,
 	})
 }
 
@@ -72,15 +75,18 @@ func (h *AuthHandler) RequestLoginCode(c *fiber.Ctx) error {
 // LoginWithCode handles actual login via code
 func (h *AuthHandler) LoginWithCode(c *fiber.Ctx) error {
 	var input struct {
-		Telephone string `json:"telephone"`
-		Code  string `json:"code"`
+		Username string `json:"username"`
+		Code     string `json:"code"`
 	}
 
-	if err := c.BodyParser(&input); err != nil || input.Telephone == "" || input.Code == "" {
+	if err := c.BodyParser(&input); err != nil || input.Username == "" || input.Code == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request"})
 	}
 
-	token, err := h.Service.LoginWithCode(input.Telephone, input.Code)
+	userAgent := c.Get("User-Agent")
+	ipAddress := c.IP()
+
+	token, err := h.Service.LoginWithCode(input.Username, input.Code, userAgent, ipAddress)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -90,3 +96,4 @@ func (h *AuthHandler) LoginWithCode(c *fiber.Ctx) error {
 		"token":   token,
 	})
 }
+
