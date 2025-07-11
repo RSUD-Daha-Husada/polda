@@ -31,12 +31,12 @@ func (s *AuthService) Login(username, password, ipAddress, userAgent string) (st
 	user, err := s.UserRepo.FindByUsername(username)
 	if err != nil {
 		_ = helpers.SaveLoginLog(s.DB, nil, "login", userAgent, ipAddress, "failed", "username not found")
-		return "", errors.New("username not found")
+		return "", errors.New("username tidak ditemukan!")
 	}
 
 	if user.Password != nil && !utils.CheckPasswordHash(password, *user.Password) {
 		_ = helpers.SaveLoginLog(s.DB, &user.UserID, "login", userAgent, ipAddress, "failed", "invalid password")
-		return "", errors.New("invalid password")
+		return "", errors.New("password anda salah")
 	}
 
 	token, err := utils.GenerateJWT(user.UserID)
@@ -45,22 +45,18 @@ func (s *AuthService) Login(username, password, ipAddress, userAgent string) (st
 		return "", err
 	}
 
-	// Simpan token ke tabel access_tokens
-	expiredAt := time.Now().Add(24 * time.Hour) // expired dalam 1 hari
+	expiredAt := time.Now().Add(24 * time.Hour) 
 	if err := utils.SaveAccessToken(s.DB, user.UserID, token, userAgent, ipAddress, expiredAt); err != nil {
 		fmt.Println("Failed to save access token:", err)
 	}
 
-	// Simpan log login sukses
 	_ = helpers.SaveLoginLog(s.DB, &user.UserID, "login", userAgent, ipAddress, "success", "login successful")
 
 	return token, nil
 }
 
 
-// ✅ Generate kode login dan simpan ke DB, lalu kirim via WhatsApp
 func (s *AuthService) GenerateLoginCode(telephone string) error {
-	// Cari user via repository
 	user, err := s.UserRepo.FindByTelephone(telephone)
 	if err != nil {
 		return errors.New("user not found")
@@ -68,16 +64,14 @@ func (s *AuthService) GenerateLoginCode(telephone string) error {
 
 	now := time.Now()
 
-	// Nonaktifkan kode sebelumnya yang masih aktif dan belum dipakai
 	s.DB.Model(&model.CodeLoginByWA{}).
 		Where("user_id = ? AND used = false AND status = true", user.UserID).
 		Update("status", false)
 
-	// Buat kode login baru
 	code := utils.RandomCode(4)
 
 	loginCode := model.CodeLoginByWA{
-		CodeLoginByWAID: uuid.New(), // <-- ini harus di-set!
+		CodeLoginByWAID: uuid.New(), 
 		UserID:          user.UserID,
 		Code:            code,
 		ValidUntil:      now.Add(5 * time.Minute),
@@ -86,12 +80,10 @@ func (s *AuthService) GenerateLoginCode(telephone string) error {
 		CreatedAt:       now,
 	}
 
-	// Simpan kode baru
 	if err := s.DB.Create(&loginCode).Error; err != nil {
 		return err
 	}
 
-	// Kirim kode ke WA (async) dengan logging error jika ada
 	go func() {
 		err := sendWhatsApp(user.Telephone, code)
 		if err != nil {
@@ -104,7 +96,6 @@ func (s *AuthService) GenerateLoginCode(telephone string) error {
 	return nil
 }
 
-// ✅ Verifikasi kode OTP, update status & generate token
 func (s *AuthService) LoginWithCode(username, code, userAgent, ipAddress string) (string, error) {
 	user, err := s.UserRepo.FindByUsername(username)
 	if err != nil {
@@ -142,13 +133,12 @@ func (s *AuthService) LoginWithCode(username, code, userAgent, ipAddress string)
 	return token, nil
 }
 
-// Kirim kode ke WhatsApp melalui WA
 func sendWhatsApp(receiver string, code string) error {
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	endpoint := "http://192.168.133.20:8101/api/send-message"
 	params := url.Values{}
-	params.Set("apikey", "wakomplain")
+	params.Set("apikey", "warm")
 	params.Set("receiver", receiver)
 	params.Set("mtype", "text")
 	params.Set("text", fmt.Sprintf("Kode login Anda: %s. Berlaku 5 menit.", code))
