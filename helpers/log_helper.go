@@ -18,7 +18,7 @@ func SaveLoginLog(db *gorm.DB, userID *uuid.UUID, access, userAgent, ipAddress, 
 		Status:    status,
 		Message:   message,
 		CreatedAt: time.Now(),
-		UserID:    userID, // ini sudah *uuid.UUID, jadi nil akan disimpan NULL
+		UserID:    userID, 
 	}
 
 	err := db.Create(&log).Error

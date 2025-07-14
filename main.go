@@ -36,6 +36,8 @@ func main() {
 		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
 	}))
 
+	app.Static("/uploads", "./public/uploads")
+
 	routes.RegisterRoutes(app, db)
 
 	log.Fatal(app.Listen(":3000"))

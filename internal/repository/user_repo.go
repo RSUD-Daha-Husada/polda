@@ -2,6 +2,7 @@ package repository
 
 import (
 	"github.com/RSUD-Daha-Husada/polda-be/internal/model"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -27,4 +28,14 @@ func (r *UserRepository) FindByTelephone(telephone string) (*model.User, error) 
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (r *UserRepository) FindByID(id uuid.UUID) (*model.User, error) {
+	var user model.User
+	err := r.DB.First(&user, "user_id = ?", id).Error
+	return &user, err
+}
+
+func (r *UserRepository) Update(id uuid.UUID, data map[string]interface{}) error {
+	return r.DB.Model(&model.User{}).Where("user_id = ?", id).Updates(data).Error
 }

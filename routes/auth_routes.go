@@ -6,20 +6,13 @@ import (
 	"gorm.io/gorm"
 )
 
-func RegisterRoutes(app *fiber.App, db *gorm.DB) {
-	api := app.Group("/api")
-
-	auth := api.Group("/auth") // semua login lewat /api/auth/...
-
+func RegisterAuthRoutes(router fiber.Router, db *gorm.DB) {
+	auth := router.Group("/auth")
 	authHandler := handler.NewAuthHandler(db)
 
-	// Login biasa (username + password)
 	auth.Post("/login", authHandler.Login)
-
-	// Kirim kode ke WA / Email
 	auth.Post("/request-code", authHandler.RequestLoginCode)
-
-	// Login pakai kode
 	auth.Post("/login-code", authHandler.LoginWithCode)
+	auth.Post("/logout", authHandler.Logout)
+	auth.Post("/check-token", authHandler.CheckToken)
 }
-

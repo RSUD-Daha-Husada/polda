@@ -1,0 +1,22 @@
+# Go
+*.exe
+*.out
+*.test
+/main
+
+# Uploads
+/public/uploads/avatars/
+
+# Environment files
+.env
+*.env.local
+
+# Logs and temp files
+*.log
+*.swp
+*.swo
+.DS_Store
+
+# Editor configs
+.vscode/
+.idea/

@@ -9,7 +9,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// SaveAccessToken menyimpan access token aktif ke tabel access_tokens
 func SaveAccessToken(db *gorm.DB, userID uuid.UUID, token, userAgent, ipAddress string, expiredAt time.Time) error {
 	accessToken := model.AccessToken{
 		ID:         uuid.New(),

@@ -31,7 +31,7 @@ func (s *AuthService) Login(username, password, ipAddress, userAgent string) (st
 	user, err := s.UserRepo.FindByUsername(username)
 	if err != nil {
 		_ = helpers.SaveLoginLog(s.DB, nil, "login", userAgent, ipAddress, "failed", "username not found")
-		return "", errors.New("username tidak ditemukan!")
+		return "", errors.New("username tidak ditemukan")
 	}
 
 	if user.Password != nil && !utils.CheckPasswordHash(password, *user.Password) {
@@ -39,13 +39,12 @@ func (s *AuthService) Login(username, password, ipAddress, userAgent string) (st
 		return "", errors.New("password anda salah")
 	}
 
-	token, err := utils.GenerateJWT(user.UserID)
+	token, expiredAt, err := utils.GenerateJWT(user.UserID)
 	if err != nil {
 		_ = helpers.SaveLoginLog(s.DB, &user.UserID, "login", userAgent, ipAddress, "failed", "failed to generate token")
 		return "", err
 	}
 
-	expiredAt := time.Now().Add(24 * time.Hour) 
 	if err := utils.SaveAccessToken(s.DB, user.UserID, token, userAgent, ipAddress, expiredAt); err != nil {
 		fmt.Println("Failed to save access token:", err)
 	}
@@ -54,7 +53,6 @@ func (s *AuthService) Login(username, password, ipAddress, userAgent string) (st
 
 	return token, nil
 }
-
 
 func (s *AuthService) GenerateLoginCode(telephone string) error {
 	user, err := s.UserRepo.FindByTelephone(telephone)
@@ -71,7 +69,7 @@ func (s *AuthService) GenerateLoginCode(telephone string) error {
 	code := utils.RandomCode(4)
 
 	loginCode := model.CodeLoginByWA{
-		CodeLoginByWAID: uuid.New(), 
+		CodeLoginByWAID: uuid.New(),
 		UserID:          user.UserID,
 		Code:            code,
 		ValidUntil:      now.Add(5 * time.Minute),
@@ -122,15 +120,40 @@ func (s *AuthService) LoginWithCode(username, code, userAgent, ipAddress string)
 		"status": false,
 	})
 
-	token, err := utils.GenerateJWT(user.UserID)
+	token, expiredAt, err := utils.GenerateJWT(user.UserID)
 	if err != nil {
 		_ = helpers.SaveLoginLog(s.DB, &user.UserID, "login_with_code", userAgent, ipAddress, "failed", "failed to generate token")
 		return "", err
 	}
 
+	if err := utils.SaveAccessToken(s.DB, user.UserID, token, userAgent, ipAddress, expiredAt); err != nil {
+		fmt.Println("Failed to save access token:", err)
+	}
+
 	_ = helpers.SaveLoginLog(s.DB, &user.UserID, "login_with_code", userAgent, ipAddress, "success", "login successful")
 
 	return token, nil
+}
+
+func (s *AuthService) InvalidateToken(rawToken string, userAgent string, ipAddress string) error {
+	var at model.AccessToken
+	if err := s.DB.Where("token = ?", rawToken).First(&at).Error; err != nil {
+		_ = helpers.SaveLoginLog(s.DB, nil, "logout", userAgent, ipAddress, "failed", "token not found")
+		return errors.New("token not found")
+	}
+
+	if at.IsRevoked {
+		_ = helpers.SaveLoginLog(s.DB, &at.UserID, "logout", userAgent, ipAddress, "failed", "token already revoked")
+		return errors.New("token has already been revoked")
+	}
+
+	if err := s.DB.Model(&at).Update("is_revoked", true).Error; err != nil {
+		_ = helpers.SaveLoginLog(s.DB, &at.UserID, "logout", userAgent, ipAddress, "failed", "failed to revoke token")
+		return err
+	}
+
+	_ = helpers.SaveLoginLog(s.DB, &at.UserID, "logout", userAgent, ipAddress, "success", "logout successful")
+	return nil
 }
 
 func sendWhatsApp(receiver string, code string) error {

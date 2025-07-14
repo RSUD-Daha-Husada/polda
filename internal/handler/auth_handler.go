@@ -1,6 +1,10 @@
 package handler
 
 import (
+	"strings"
+	"time"
+
+	"github.com/RSUD-Daha-Husada/polda-be/helpers"
 	"github.com/RSUD-Daha-Husada/polda-be/internal/model"
 	"github.com/RSUD-Daha-Husada/polda-be/internal/service"
 	"github.com/gofiber/fiber/v2"
@@ -97,3 +101,61 @@ func (h *AuthHandler) LoginWithCode(c *fiber.Ctx) error {
 	})
 }
 
+func (h *AuthHandler) Logout(c *fiber.Ctx) error {
+	token := c.Get("Authorization")
+	if token == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "No token provided"})
+	}
+
+	token = strings.TrimPrefix(token, "Bearer ")
+
+	ip := c.IP()
+	userAgent := c.Get("User-Agent")
+
+	err := h.Service.InvalidateToken(token, userAgent, ip)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{"message": "logout successful"})
+}
+
+func (h *AuthHandler) CheckToken(c *fiber.Ctx) error {
+	authHeader := c.Get("Authorization")
+	ip := c.IP()
+	userAgent := c.Get("User-Agent")
+
+	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+		_ = helpers.SaveLoginLog(h.Service.DB, nil, "check_token", userAgent, ip, "failed", "no authorization header")
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
+
+	rawToken := strings.TrimPrefix(authHeader, "Bearer ")
+
+	var at model.AccessToken
+	if err := h.Service.DB.Where("token = ?", rawToken).First(&at).Error; err != nil {
+		_ = helpers.SaveLoginLog(h.Service.DB, nil, "check_token", userAgent, ip, "failed", "token not found")
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Token is revoked or invalid",
+		})
+	}
+
+	if at.IsRevoked {
+		_ = helpers.SaveLoginLog(h.Service.DB, &at.UserID, "check_token", userAgent, ip, "failed", "token is revoked")
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Token has been revoked",
+		})
+	}
+
+	if time.Now().After(at.ExpiredAt) {
+		_ = h.Service.DB.Model(&at).Update("is_revoked", true).Error
+		_ = helpers.SaveLoginLog(h.Service.DB, &at.UserID, "check_token", userAgent, ip, "failed", "token expired")
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Token has expired",
+		})
+	}
+
+	return c.JSON(fiber.Map{"valid": true})
+}

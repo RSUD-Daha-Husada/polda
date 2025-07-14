@@ -12,6 +12,6 @@ type Log struct {
 	UserAgent string    `gorm:"type:text" json:"user_agent"`
 	IPAddress string    `gorm:"type:varchar(100)" json:"ip_address"`
 	Status    string    `gorm:"type:varchar(20)" json:"status"` // misal "success", "failed"
-	Message   string    `gorm:"type:text" json:"message"`       // bisa panjang, jadi text
+	Message   string    `gorm:"type:text" json:"message"`    
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 }
