@@ -53,6 +53,7 @@ func (h *UserHandler) Me(c *fiber.Ctx) error {
 		"roleId":    user.RoleID,
 		"poto":      user.Poto,
 		"isActive":  user.IsActive,
+		"lastLogin": user.LastLogin,
 	})
 }
 

@@ -49,6 +49,8 @@ func (s *AuthService) Login(username, password, ipAddress, userAgent string) (st
 		fmt.Println("Failed to save access token:", err)
 	}
 
+	_ = s.DB.Model(&user).Update("last_login", time.Now())
+
 	_ = helpers.SaveLoginLog(s.DB, &user.UserID, "login", userAgent, ipAddress, "success", "login successful")
 
 	return token, nil
@@ -129,6 +131,8 @@ func (s *AuthService) LoginWithCode(username, code, userAgent, ipAddress string)
 	if err := utils.SaveAccessToken(s.DB, user.UserID, token, userAgent, ipAddress, expiredAt); err != nil {
 		fmt.Println("Failed to save access token:", err)
 	}
+
+	_ = s.DB.Model(&user).Update("last_login", time.Now())
 
 	_ = helpers.SaveLoginLog(s.DB, &user.UserID, "login_with_code", userAgent, ipAddress, "success", "login successful")
 
