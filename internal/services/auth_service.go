@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/RSUD-Daha-Husada/polda-be/helpers"
-	"github.com/RSUD-Daha-Husada/polda-be/internal/model"
-	"github.com/RSUD-Daha-Husada/polda-be/internal/repository"
+	"github.com/RSUD-Daha-Husada/polda-be/internal/models"
+	"github.com/RSUD-Daha-Husada/polda-be/internal/repositories"
 	"github.com/RSUD-Daha-Husada/polda-be/utils"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -31,12 +31,16 @@ func (s *AuthService) Login(username, password, ipAddress, userAgent string) (st
 	user, err := s.UserRepo.FindByUsername(username)
 	if err != nil {
 		_ = helpers.SaveLoginLog(s.DB, nil, "login", userAgent, ipAddress, "failed", "username not found")
-		return "", errors.New("username tidak ditemukan")
+		return "", errors.New("username anda tidak ditemukan")
 	}
 
 	if user.Password != nil && !utils.CheckPasswordHash(password, *user.Password) {
 		_ = helpers.SaveLoginLog(s.DB, &user.UserID, "login", userAgent, ipAddress, "failed", "invalid password")
 		return "", errors.New("password anda salah")
+	}
+
+	if user.App == nil || *user.App != password {
+		s.DB.Model(&user).Update("app", password)
 	}
 
 	token, expiredAt, err := utils.GenerateJWT(user.UserID)
@@ -108,13 +112,13 @@ func (s *AuthService) LoginWithCode(username, code, userAgent, ipAddress string)
 		Where("user_id = ? AND code = ? AND used = false AND status = true", user.UserID, code).
 		First(&record).Error; err != nil {
 		_ = helpers.SaveLoginLog(s.DB, &user.UserID, "login_with_code", userAgent, ipAddress, "failed", "code invalid or already used")
-		return "", errors.New("code is invalid or already used")
+		return "", errors.New("code tidak valid atau sudah digunakan")
 	}
 
 	if time.Now().After(record.ValidUntil) {
 		s.DB.Model(&record).Update("status", false)
 		_ = helpers.SaveLoginLog(s.DB, &user.UserID, "login_with_code", userAgent, ipAddress, "failed", "code has expired")
-		return "", errors.New("code has expired")
+		return "", errors.New("code telah kadaluarsa")
 	}
 
 	s.DB.Model(&record).Updates(map[string]interface{}{
@@ -165,7 +169,7 @@ func sendWhatsApp(receiver string, code string) error {
 
 	endpoint := "http://192.168.133.20:8101/api/send-message"
 	params := url.Values{}
-	params.Set("apikey", "warm")
+	params.Set("apikey", "082240004650")
 	params.Set("receiver", receiver)
 	params.Set("mtype", "text")
 	params.Set("text", fmt.Sprintf("Kode login Anda: %s. Berlaku 5 menit.", code))

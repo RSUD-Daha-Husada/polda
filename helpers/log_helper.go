@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/RSUD-Daha-Husada/polda-be/internal/model"
+	"github.com/RSUD-Daha-Husada/polda-be/internal/models"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )

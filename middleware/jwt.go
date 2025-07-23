@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/RSUD-Daha-Husada/polda-be/internal/model"
+	"github.com/RSUD-Daha-Husada/polda-be/internal/models"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"gorm.io/gorm"

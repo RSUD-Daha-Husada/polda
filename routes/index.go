@@ -8,8 +8,9 @@ import (
 func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 	api := app.Group("/api")
 
-	// Modular route register
 	RegisterAuthRoutes(api, db)
 	RegisterUserRoutes(api, db)
-	// Tambah modul lain di sini
+	RegisterAppRoutes(api, db)
+	RegisterUserAppRoutes(api, db)
+	RegisterRoleRoutes(api, db)
 }

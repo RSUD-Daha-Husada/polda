@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/RSUD-Daha-Husada/polda-be/helpers"
-	"github.com/RSUD-Daha-Husada/polda-be/internal/model"
-	"github.com/RSUD-Daha-Husada/polda-be/internal/service"
+	"github.com/RSUD-Daha-Husada/polda-be/internal/models"
+	"github.com/RSUD-Daha-Husada/polda-be/internal/services"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )

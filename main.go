@@ -19,8 +19,7 @@ func main() {
 
 	db := config.ConnectDB()
 
-	// Generate hashed password dan print (hanya untuk testing)
-	password := "password123"
+	password := "SIMRS2023"
 	hashedPassword, err := utils.HashPassword(password)
 	if err != nil {
 		log.Fatal(err)
@@ -29,11 +28,10 @@ func main() {
 
 	app := fiber.New()
 
-	// middleware cors
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "http://localhost:5173", // atau "*" untuk semua origin
+		AllowOrigins: "http://localhost:5173", 
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
-		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
+		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS,PATCH",
 	}))
 
 	app.Static("/uploads", "./public/uploads")

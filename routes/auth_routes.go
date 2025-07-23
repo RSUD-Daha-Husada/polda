@@ -1,13 +1,14 @@
 package routes
 
 import (
-	"github.com/RSUD-Daha-Husada/polda-be/internal/handler"
+	"github.com/RSUD-Daha-Husada/polda-be/internal/handlers"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
 
 func RegisterAuthRoutes(router fiber.Router, db *gorm.DB) {
 	auth := router.Group("/auth")
+
 	authHandler := handler.NewAuthHandler(db)
 
 	auth.Post("/login", authHandler.Login)
