@@ -162,7 +162,7 @@ func (h *UserHandler) EditProfile(c *fiber.Ctx) error {
 		photoURL = filename
 	}
 
-	input := service.UpdateProfileInput{
+	input := dto.UpdateProfileInput{
 		UserID:      userID,
 		OldPassword: oldPassword,
 		Password:    newPassword,

@@ -51,7 +51,6 @@ func (h *UserApplicationHandler) GetUserAppByID(c *fiber.Ctx) error {
 }
 
 func (h *UserApplicationHandler) GetUserAppsByUser(c *fiber.Ctx) error {
-	// Ambil user_id dari context
 	userIDStr, ok := c.Locals("user_id").(string)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -59,7 +58,6 @@ func (h *UserApplicationHandler) GetUserAppsByUser(c *fiber.Ctx) error {
 		})
 	}
 
-	// Convert string ke UUID
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -67,7 +65,6 @@ func (h *UserApplicationHandler) GetUserAppsByUser(c *fiber.Ctx) error {
 		})
 	}
 
-	// Panggil service dengan UUID
 	userApps, err := h.Service.GetUserAppsByUserID(c.Context(), userID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/RSUD-Daha-Husada/polda-be/helpers"
-	"github.com/RSUD-Daha-Husada/polda-be/internal/models"
-	"github.com/RSUD-Daha-Husada/polda-be/internal/services"
+	model "github.com/RSUD-Daha-Husada/polda-be/internal/models"
+	service "github.com/RSUD-Daha-Husada/polda-be/internal/services"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
@@ -45,29 +45,24 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	})
 }
 
-// RequestLoginCode handles code request via WA/email
 func (h *AuthHandler) RequestLoginCode(c *fiber.Ctx) error {
 	var input struct {
 		Username string `json:"username"`
 	}
 
-	// Parse input dari body
 	if err := c.BodyParser(&input); err != nil || input.Username == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request"})
 	}
 
-	// Cari user berdasarkan username
 	var user model.User
 	if err := h.Service.DB.Where("username = ?", input.Username).First(&user).Error; err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "user not found"})
 	}
 
-	// Cek apakah user punya nomor telepon
 	if user.Telephone == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "user does not have a registered phone number"})
 	}
 
-	// Kirim kode login via WA menggunakan nomor telepon user
 	err := h.Service.GenerateLoginCode(user.Telephone)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
@@ -76,7 +71,6 @@ func (h *AuthHandler) RequestLoginCode(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "login code sent"})
 }
 
-// LoginWithCode handles actual login via code
 func (h *AuthHandler) LoginWithCode(c *fiber.Ctx) error {
 	var input struct {
 		Username string `json:"username"`

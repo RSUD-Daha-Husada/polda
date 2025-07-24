@@ -30,3 +30,11 @@ type EditUserInput struct {
 	ApplicationIDs []uuid.UUID `json:"application_ids"`
 	UpdatedBy      uuid.UUID   `json:"updated_by"`
 }
+
+type UpdateProfileInput struct {
+	UserID      uuid.UUID
+	OldPassword string
+	Password    string
+	Photo        string
+	Telephone   string
+}

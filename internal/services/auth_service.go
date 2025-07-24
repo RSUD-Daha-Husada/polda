@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/RSUD-Daha-Husada/polda-be/helpers"
@@ -167,7 +168,7 @@ func (s *AuthService) InvalidateToken(rawToken string, userAgent string, ipAddre
 func sendWhatsApp(receiver string, code string) error {
 	client := &http.Client{Timeout: 5 * time.Second}
 
-	endpoint := "http://192.168.133.20:8101/api/send-message"
+	endpoint := os.Getenv("SEND_MESSAGE_ENDPOINT")
 	params := url.Values{}
 	params.Set("apikey", "082240004650")
 	params.Set("receiver", receiver)

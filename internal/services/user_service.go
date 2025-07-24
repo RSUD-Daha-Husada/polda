@@ -31,14 +31,6 @@ type CreateUserInput struct {
 	ApplicationIDs []uuid.UUID `json:"application_ids"`
 }
 
-type UpdateProfileInput struct {
-	UserID      uuid.UUID
-	OldPassword string
-	Password    string
-	Photo        string
-	Telephone   string
-}
-
 func NewUserService(db *gorm.DB) *UserService {
 	return &UserService{
 		DB:       db,
@@ -54,7 +46,7 @@ func (s *UserService) GetProfile(userID uuid.UUID) (*model.User, error) {
 	return user, nil
 }
 
-func (s *UserService) UpdateProfile(input UpdateProfileInput) (*model.User, error) {
+func (s *UserService) UpdateProfile(input dto.UpdateProfileInput) (*model.User, error) {
 	user, err := s.UserRepo.FindByID(input.UserID)
 	if err != nil {
 		return nil, errors.New("user not found")
